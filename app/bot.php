@@ -7759,80 +7759,179 @@ DNS-over-HTTPS with IP:
                         $outbounds = [];
                         $baseOutbound = $c['outbounds'][$index];
 
-                        // WS
+                        // VLESS WebSocket
                         $ws = $baseOutbound;
                         $ws['tag'] = 'VLESS-WS';
                         $ws['streamSettings'] = [
                             "network"    => "ws",
                             "security"   => "tls",
-                            "wsSettings" => ["path" => "/ws$hash?ed=2560"],
+                            "wsSettings" => ["path" => "/vlws?ed=2560"],
                             "tlsSettings" => ["allowInsecure" => false, "serverName" => '~domain~', "fingerprint" => $fingerprint]
                         ];
                         unset($ws['mux']);
                         $outbounds[] = $ws;
 
-                        // Reality
-                        $reality = $baseOutbound;
-                        $reality['tag'] = 'VLESS-Reality';
-                        $reality['settings']['vnext'][0]['users'][0]["flow"] = "xtls-rprx-vision";
-                        $reality['streamSettings'] = [
-                            "network"         => "tcp",
-                            "security"        => "reality",
-                            "realitySettings" => [
-                                "serverName"  => '~server_name~',
-                                "fingerprint" => $fingerprint,
-                                "publicKey"   => '~public_key~',
-                                "shortId"     => '~short_id~',
-                            ]
+                        // VMess WebSocket
+                        $vmessWs = json_decode(json_encode($baseOutbound), true);
+                        $vmessWs['tag'] = 'VMess-WS';
+                        $vmessWs['protocol'] = 'vmess';
+                        $vmessWs['settings'] = [
+                            "vnext" => [[
+                                "address" => '~domain~',
+                                "port" => 443,
+                                "users" => [["id" => '~uid~', "alterId" => 0, "security" => "auto"]]
+                            ]]
                         ];
-                        $reality['mux'] = ["enabled" => false, "concurrency" => -1];
-                        $outbounds[] = $reality;
+                        $vmessWs['streamSettings'] = [
+                            "network"    => "ws",
+                            "security"   => "tls",
+                            "wsSettings" => ["path" => "/vmws?ed=2560"],
+                            "tlsSettings" => ["allowInsecure" => false, "serverName" => '~domain~', "fingerprint" => $fingerprint]
+                        ];
+                        unset($vmessWs['mux']);
+                        $outbounds[] = $vmessWs;
 
-                        if ($pac['transport'] == 'AIO') {
-                            // XHTTP
-                            $xhttp = $baseOutbound;
-                            $xhttp['tag'] = 'VLESS-XHTTP';
-                            $xhttp['streamSettings'] = [
-                                "network"  => "xhttp",
-                                "security" => "tls",
-                                "xhttpSettings" => [
-                                    "host" => "~domain~",
-                                    "mode" => "packet-up",
-                                    "path" => "/xhttp$hash",
-                                    "extra" => [
-                                        "scMaxEachPostBytes"    => 1000000,
-                                        "scMinPostsIntervalMs"  => 30,
-                                        "scStreamUpServerSecs"  => "20-80",
-                                        "xmux" => [
-                                            "cMaxReuseTimes"    => 0,
-                                            "hKeepAlivePeriod"  => 0,
-                                            "hMaxRequestTimes"  => "600-900",
-                                            "hMaxReusableSecs"  => "1800-3000",
-                                            "maxConcurrency"    => "16-32",
-                                            "maxConnections"    => 0,
-                                        ],
-                                        "xPaddingBytes" => "100-1000",
-                                        "noGRPCHeader"  => false
+                        // Trojan WebSocket
+                        $trojanWs = json_decode(json_encode($baseOutbound), true);
+                        $trojanWs['tag'] = 'Trojan-WS';
+                        $trojanWs['protocol'] = 'trojan';
+                        $trojanWs['settings'] = [
+                            "servers" => [[
+                                "address" => '~domain~',
+                                "port" => 443,
+                                "password" => '~uid~'
+                            ]]
+                        ];
+                        $trojanWs['streamSettings'] = [
+                            "network"    => "ws",
+                            "security"   => "tls",
+                            "wsSettings" => ["path" => "/trojanws?ed=2560"],
+                            "tlsSettings" => ["allowInsecure" => false, "serverName" => '~domain~', "fingerprint" => $fingerprint]
+                        ];
+                        unset($trojanWs['mux']);
+                        $outbounds[] = $trojanWs;
+
+                        // Shadowsocks WebSocket
+                        $ssWs = json_decode(json_encode($baseOutbound), true);
+                        $ssWs['tag'] = 'Shadowsocks-WS';
+                        $ssWs['protocol'] = 'shadowsocks';
+                        $ssWs['settings'] = [
+                            "servers" => [[
+                                "address" => '~domain~',
+                                "port" => 443,
+                                "method" => "chacha20-ietf-poly1305",
+                                "password" => '~uid~'
+                            ]]
+                        ];
+                        $ssWs['streamSettings'] = [
+                            "network"    => "ws",
+                            "security"   => "tls",
+                            "wsSettings" => ["path" => "/ssws?ed=2560"],
+                            "tlsSettings" => ["allowInsecure" => false, "serverName" => '~domain~', "fingerprint" => $fingerprint]
+                        ];
+                        unset($ssWs['mux']);
+                        $outbounds[] = $ssWs;
+
+                        // VLESS TCP
+                        $tcp = $baseOutbound;
+                        $tcp['tag'] = 'VLESS-TCP';
+                        $tcp['streamSettings'] = [
+                            "network"    => "tcp",
+                            "security"   => "tls",
+                            "tcpSettings" => [
+                                "header" => [
+                                    "type" => "http",
+                                    "request" => [
+                                        "path" => ["/vltc"]
                                     ]
-                                ],
-                                "tlsSettings" => [
-                                    "allowInsecure" => false,
-                                    "alpn"          => ["h2", "http/1.1"],
-                                    "fingerprint"   => "chrome",
-                                    "serverName"    => "~domain~",
-                                    "show"          => false
                                 ]
-                            ];
-                            unset($xhttp['mux']);
-                            $outbounds[] = $xhttp;
-                        }
+                            ],
+                            "tlsSettings" => ["allowInsecure" => false, "serverName" => '~domain~', "fingerprint" => $fingerprint]
+                        ];
+                        unset($tcp['mux']);
+                        $outbounds[] = $tcp;
+
+                        // VMess TCP
+                        $vmessTcp = json_decode(json_encode($baseOutbound), true);
+                        $vmessTcp['tag'] = 'VMess-TCP';
+                        $vmessTcp['protocol'] = 'vmess';
+                        $vmessTcp['settings'] = [
+                            "vnext" => [[
+                                "address" => '~domain~',
+                                "port" => 443,
+                                "users" => [["id" => '~uid~', "alterId" => 0, "security" => "auto"]]
+                            ]]
+                        ];
+                        $vmessTcp['streamSettings'] = [
+                            "network"    => "tcp",
+                            "security"   => "tls",
+                            "tcpSettings" => [
+                                "header" => [
+                                    "type" => "http",
+                                    "request" => [
+                                        "path" => ["/vmtc"]
+                                    ]
+                                ]
+                            ],
+                            "tlsSettings" => ["allowInsecure" => false, "serverName" => '~domain~', "fingerprint" => $fingerprint]
+                        ];
+                        unset($vmessTcp['mux']);
+                        $outbounds[] = $vmessTcp;
+
+                        // Shadowsocks TCP
+                        $ssTcp = json_decode(json_encode($baseOutbound), true);
+                        $ssTcp['tag'] = 'Shadowsocks-TCP';
+                        $ssTcp['protocol'] = 'shadowsocks';
+                        $ssTcp['settings'] = [
+                            "servers" => [[
+                                "address" => '~domain~',
+                                "port" => 443,
+                                "method" => "chacha20-ietf-poly1305",
+                                "password" => '~uid~'
+                            ]]
+                        ];
+                        $ssTcp['streamSettings'] = [
+                            "network"    => "tcp",
+                            "security"   => "tls",
+                            "tcpSettings" => [
+                                "header" => [
+                                    "type" => "http",
+                                    "request" => [
+                                        "path" => ["/sstc"]
+                                    ]
+                                ]
+                            ],
+                            "tlsSettings" => ["allowInsecure" => false, "serverName" => '~domain~', "fingerprint" => $fingerprint]
+                        ];
+                        unset($ssTcp['mux']);
+                        $outbounds[] = $ssTcp;
+
+                        // Trojan H2
+                        $trojanH2 = json_decode(json_encode($baseOutbound), true);
+                        $trojanH2['tag'] = 'Trojan-H2';
+                        $trojanH2['protocol'] = 'trojan';
+                        $trojanH2['settings'] = [
+                            "servers" => [[
+                                "address" => '~domain~',
+                                "port" => 443,
+                                "password" => '~uid~'
+                            ]]
+                        ];
+                        $trojanH2['streamSettings'] = [
+                            "network"      => "h2",
+                            "security"     => "tls",
+                            "httpSettings" => ["path" => "/trh2"],
+                            "tlsSettings"  => ["allowInsecure" => false, "serverName" => '~domain~', "fingerprint" => $fingerprint]
+                        ];
+                        unset($trojanH2['mux']);
+                        $outbounds[] = $trojanH2;
 
                         // Add selector
                         $selector = [
                             "type" => "selector",
                             "tag"  => "~outbound~",
                             "outbounds" => array_column($outbounds, 'tag'),
-                            "default" => "VLESS-Reality"
+                            "default" => "VLESS-WS"
                         ];
                         $outbounds[] = $selector;
 
@@ -9591,105 +9690,310 @@ DNS-over-HTTPS with IP:
                 break;
 
             case 'AIO':
-                // WS
-                $baseInbound['streamSettings'] = [
-                    "network"    => "ws",
-                    "wsSettings" => ["path" => "/ws$h"]
-                ];
-                // Reality
-                $realityInbound = [
-                    "port"     => 33443,
-                    "protocol" => "vless",
-                    "settings" => [
-                        "clients"    => $clientsWs,
-                        "decryption" => "none",
-                    ],
-                    "sniffing" => $baseInbound['sniffing'],
-                    "streamSettings" => [
-                        "network"         => "tcp",
-                        "realitySettings" => [
-                            "dest"         => $p['reality']['destination'] ?: $p['reality']['domain'] . ':443',
-                            "maxClientVer" => "",
-                            "maxTimeDiff"  => 0,
-                            "minClientVer" => "",
-                            "privateKey"   => $p['reality']['privateKey'],
-                            "serverNames"  => [$p['reality']['domain']],
-                            "shortIds"     => [$p['reality']['shortId']],
-                            "show"         => false,
-                            "xver"         => 0
-                        ],
-                        "tcpSettings" => ["acceptProxyProtocol" => true],
-                        "sockopt" => ["acceptProxyProtocol" => true],
-                        "security" => "reality"
-                    ],
-                    "tag" => "vless_reality",
-                ];
-                // XHTTP
-                $xhttpInbound = [
+                // All-in-One Fallbacks Architecture - Single Port 443
+                // Main inbound with TLS and fallbacks chain
+                $mainInbound = [
+                    "tag"      => "vless_tls",
                     "port"     => 443,
                     "protocol" => "vless",
                     "settings" => [
                         "clients"    => $clientsWs,
                         "decryption" => "none",
-                    ],
-                    "sniffing" => $baseInbound['sniffing'],
-                    "streamSettings" => [
-                        "network"       => "xhttp",
-                        "xhttpSettings" => [
-                            "mode"  => "auto",
-                            "path"  => "/xhttp$h",
-                            "extra" => [
-                                "noSSEHeader"          => true,
-                                "xPaddingBytes"        => "100-1000",
-                                "scMaxBufferedPosts"   => 30,
-                                "scMaxEachPostBytes"   => 1000000,
-                                "scStreamUpServerSecs" => "20-80"
+                        "fallbacks"  => [
+                            // VLESS WebSocket fallback
+                            [
+                                "path" => "/vlws",
+                                "dest" => "@vless-ws",
+                                "xver" => 2
+                            ],
+                            // VMess WebSocket fallback
+                            [
+                                "path" => "/vmws",
+                                "dest" => "@vmess-ws",
+                                "xver" => 2
+                            ],
+                            // Trojan WebSocket fallback
+                            [
+                                "path" => "/trojanws",
+                                "dest" => "@trojan-ws",
+                                "xver" => 2
+                            ],
+                            // Shadowsocks WebSocket fallback
+                            [
+                                "path" => "/ssws",
+                                "dest" => 4001,
+                                "xver" => 2
+                            ],
+                            // VLESS TCP fallback
+                            [
+                                "path" => "/vltc",
+                                "dest" => "@vless-tcp",
+                                "xver" => 2
+                            ],
+                            // VMess TCP fallback
+                            [
+                                "path" => "/vmtc",
+                                "dest" => "@vmess-tcp",
+                                "xver" => 2
+                            ],
+                            // Shadowsocks TCP fallback
+                            [
+                                "path" => "/sstc",
+                                "dest" => 4002,
+                                "xver" => 2
+                            ],
+                            // H2 fallback for Trojan/VMess/VLESS
+                            [
+                                "alpn" => "h2",
+                                "dest" => "@trojan-h2",
+                                "xver" => 2
+                            ],
+                            // Default fallback to nginx
+                            [
+                                "dest" => "127.0.0.1:8080",
+                                "xver" => 2
                             ]
                         ]
                     ],
-                    "tag" => "vless_xhttp",
-                ];
-                // gRPC
-                $grpcInbound = [
-                    "port"     => 443,
-                    "protocol" => "vless",
-                    "settings" => [
-                        "clients"    => $clientsWs,
-                        "decryption" => "none",
-                    ],
-                    "sniffing" => $baseInbound['sniffing'],
                     "streamSettings" => [
-                        "network"      => "grpc",
-                        "grpcSettings" => [
-                            "serviceName" => "grpc$h"
-                        ]
-                    ],
-                    "tag" => "vless_grpc",
-                ];
-                // Hysteria2
-                $hy2Inbound = [
-                    "port"     => 11443,
-                    "protocol" => "hysteria",
-                    "settings" => [
-                        "version" => 2,
-                        "auths"   => array_map(fn($c) => ["password" => $c['id']], $clientsWs)
-                    ],
-                    "streamSettings" => [
-                        "network"  => "hysteria",
+                        "network" => "tcp",
                         "security" => "tls",
                         "tlsSettings" => [
                             "certificates" => [
                                 [
-                                    "certificateFile" => "/certs/self_public",
-                                    "keyFile"         => "/certs/self_private",
+                                    "ocspStapling" => 3600,
+                                    "certificateFile" => "/certs/fullchain.pem",
+                                    "keyFile" => "/certs/privkey.pem"
                                 ]
                             ],
-                            "alpn" => ["h3"]
+                            "minVersion" => "1.2",
+                            "cipherSuites" => "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+                            "alpn" => ["h2", "http/1.1"]
                         ]
                     ],
-                    "tag" => "vless_hy2",
+                    "sniffing" => [
+                        "enabled" => true,
+                        "destOverride" => ["http", "tls", "quic"]
+                    ]
                 ];
-                $x['inbounds'] = [$baseInbound, $apiInbound, $realityInbound, $xhttpInbound, $grpcInbound, $hy2Inbound];
+
+                // VLESS WebSocket inbound (Unix socket)
+                $vlessWsInbound = [
+                    "listen" => "@vless-ws",
+                    "protocol" => "vless",
+                    "settings" => [
+                        "clients" => $clientsWs,
+                        "decryption" => "none"
+                    ],
+                    "streamSettings" => [
+                        "network" => "ws",
+                        "security" => "none",
+                        "wsSettings" => [
+                            "acceptProxyProtocol" => true,
+                            "path" => "/vlws"
+                        ]
+                    ],
+                    "sniffing" => [
+                        "enabled" => true,
+                        "destOverride" => ["http", "tls"]
+                    ],
+                    "tag" => "vless_ws"
+                ];
+
+                // VMess WebSocket inbound (Unix socket)
+                $vmessWsInbound = [
+                    "listen" => "@vmess-ws",
+                    "protocol" => "vmess",
+                    "settings" => [
+                        "clients" => $clientsWs
+                    ],
+                    "streamSettings" => [
+                        "network" => "ws",
+                        "security" => "none",
+                        "wsSettings" => [
+                            "acceptProxyProtocol" => true,
+                            "path" => "/vmws"
+                        ]
+                    ],
+                    "sniffing" => [
+                        "enabled" => true,
+                        "destOverride" => ["http", "tls"]
+                    ],
+                    "tag" => "vmess_ws"
+                ];
+
+                // Trojan WebSocket inbound (Unix socket)
+                $trojanWsInbound = [
+                    "listen" => "@trojan-ws",
+                    "protocol" => "trojan",
+                    "settings" => [
+                        "clients" => $clientsWs
+                    ],
+                    "streamSettings" => [
+                        "network" => "ws",
+                        "security" => "none",
+                        "wsSettings" => [
+                            "acceptProxyProtocol" => true,
+                            "path" => "/trojanws"
+                        ]
+                    ],
+                    "sniffing" => [
+                        "enabled" => true,
+                        "destOverride" => ["http", "tls"]
+                    ],
+                    "tag" => "trojan_ws"
+                ];
+
+                // Shadowsocks WebSocket inbound (TCP port)
+                $ssWsInbound = [
+                    "tag" => "shadowsocks-ws",
+                    "listen" => "127.0.0.1",
+                    "port" => 4001,
+                    "protocol" => "shadowsocks",
+                    "settings" => [
+                        "method" => "chacha20-ietf-poly1305",
+                        "password" => $clientsWs[0]['id'] ?? '',
+                        "level" => 0
+                    ],
+                    "streamSettings" => [
+                        "network" => "ws",
+                        "security" => "none",
+                        "wsSettings" => [
+                            "path" => "/ssws"
+                        ]
+                    ],
+                    "sniffing" => [
+                        "enabled" => true,
+                        "destOverride" => ["http", "tls"]
+                    ]
+                ];
+
+                // VLESS TCP inbound (Unix socket)
+                $vlessTcpInbound = [
+                    "listen" => "@vless-tcp",
+                    "protocol" => "vless",
+                    "settings" => [
+                        "clients" => $clientsWs,
+                        "decryption" => "none"
+                    ],
+                    "streamSettings" => [
+                        "network" => "tcp",
+                        "security" => "none",
+                        "tcpSettings" => [
+                            "acceptProxyProtocol" => true,
+                            "header" => [
+                                "type" => "http",
+                                "request" => [
+                                    "path" => ["/vltc"]
+                                ]
+                            ]
+                        ]
+                    ],
+                    "sniffing" => [
+                        "enabled" => true,
+                        "destOverride" => ["http", "tls"]
+                    ],
+                    "tag" => "vless_tcp"
+                ];
+
+                // VMess TCP inbound (Unix socket)
+                $vmessTcpInbound = [
+                    "listen" => "@vmess-tcp",
+                    "protocol" => "vmess",
+                    "settings" => [
+                        "clients" => $clientsWs
+                    ],
+                    "streamSettings" => [
+                        "network" => "tcp",
+                        "security" => "none",
+                        "tcpSettings" => [
+                            "acceptProxyProtocol" => true,
+                            "header" => [
+                                "type" => "http",
+                                "request" => [
+                                    "path" => ["/vmtc"]
+                                ]
+                            ]
+                        ]
+                    ],
+                    "sniffing" => [
+                        "enabled" => true,
+                        "destOverride" => ["http", "tls"]
+                    ],
+                    "tag" => "vmess_tcp"
+                ];
+
+                // Shadowsocks TCP inbound (TCP port)
+                $ssTcpInbound = [
+                    "tag" => "shadowsocks-tcp",
+                    "listen" => "127.0.0.1",
+                    "port" => 4002,
+                    "protocol" => "shadowsocks",
+                    "settings" => [
+                        "method" => "chacha20-ietf-poly1305",
+                        "password" => $clientsWs[0]['id'] ?? '',
+                        "level" => 0
+                    ],
+                    "streamSettings" => [
+                        "network" => "tcp",
+                        "security" => "none",
+                        "tcpSettings" => [
+                            "header" => [
+                                "type" => "http",
+                                "request" => [
+                                    "path" => ["/sstc"]
+                                ]
+                            ]
+                        ]
+                    ],
+                    "sniffing" => [
+                        "enabled" => true,
+                        "destOverride" => ["http", "tls"]
+                    ]
+                ];
+
+                // Trojan H2 inbound (Unix socket)
+                $trojanH2Inbound = [
+                    "listen" => "@trojan-h2",
+                    "protocol" => "trojan",
+                    "settings" => [
+                        "clients" => $clientsWs
+                    ],
+                    "streamSettings" => [
+                        "network" => "h2",
+                        "security" => "none",
+                        "httpSettings" => [
+                            "path" => "/trh2"
+                        ]
+                    ],
+                    "sniffing" => [
+                        "enabled" => true,
+                        "destOverride" => ["http", "tls"]
+                    ],
+                    "tag" => "trojan_h2"
+                ];
+
+                // API inbound for stats
+                $apiInbound = [
+                    "listen" => "127.0.0.1",
+                    "port" => 8080,
+                    "protocol" => "dokodemo-door",
+                    "settings" => ["address" => "127.0.0.1"],
+                    "tag" => "api"
+                ];
+
+                $x['inbounds'] = [
+                    $apiInbound,
+                    $mainInbound,
+                    $vlessWsInbound,
+                    $vmessWsInbound,
+                    $trojanWsInbound,
+                    $ssWsInbound,
+                    $vlessTcpInbound,
+                    $vmessTcpInbound,
+                    $ssTcpInbound,
+                    $trojanH2Inbound
+                ];
                 break;
 
             case 'Reality':

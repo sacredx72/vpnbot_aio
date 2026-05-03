@@ -1,72 +1,17 @@
 {
-    "inbounds": [
-        {
-            "port": 443,
-            "protocol": "vless",
-            "settings": {
-                "clients": [
-                ],
-                "decryption": "none"
-            },
-            "sniffing": {
-                "destOverride": [
-                    "http",
-                    "tls",
-                    "quic"
-                ],
-                "enabled": true
-            },
-            "streamSettings": {
-                "network": "ws",
-                "wsSettings": {
-                    "path": "/ws"
-                }
-            },
-            "tag": "vless_tls"
-        },
-        {
-            "listen": "127.0.0.1",
-            "port": 8080,
-            "protocol": "dokodemo-door",
-            "settings": {
-                "address": "127.0.0.1"
-            },
-            "tag": "api"
-        }
-    ],
     "log": {
         "loglevel": "info",
         "access": "/logs/xray"
     },
-    "outbounds": [
-        {
-            "protocol": "freedom",
-            "tag": "direct"
-        },
-        {
-            "protocol": "blackhole",
-            "tag": "block"
-        }
-    ],
-    "routing": {
-        "domainStrategy": "IPIfNonMatch",
-        "rules": [
-            {
-                "inboundTag": [
-                    "api"
-                ],
-                "outboundTag": "api",
-                "type": "field"
-            }
-        ]
-    },
-    "stats": {},
     "api": {
         "services": [
+            "HandlerService",
+            "LoggerService",
             "StatsService"
         ],
         "tag": "api"
     },
+    "stats": {},
     "policy": {
         "levels": {
             "0": {
@@ -80,5 +25,428 @@
             "statsOutboundUplink": true,
             "statsOutboundDownlink": true
         }
+    },
+    "inbounds": [
+        {
+            "listen": "127.0.0.1",
+            "port": 62789,
+            "protocol": "dokodemo-door",
+            "settings": {
+                "address": "127.0.0.1"
+            },
+            "tag": "api",
+            "sniffing": null
+        },
+        {
+            "tag": "Vless-TCP-TLS",
+            "port": 443,
+            "protocol": "vless",
+            "settings": {
+                "clients": [],
+                "decryption": "none",
+                "fallbacks": [
+                    {
+                        "path": "/vlws",
+                        "dest": "@vless-ws",
+                        "xver": 2
+                    },
+                    {
+                        "path": "/vmws",
+                        "dest": "@vmess-ws",
+                        "xver": 2
+                    },
+                    {
+                        "path": "/trojanws",
+                        "dest": "@trojan-ws",
+                        "xver": 2
+                    },
+                    {
+                        "path": "/ssws",
+                        "dest": 4001,
+                        "xver": 2
+                    },
+                    {
+                        "path": "/vltc",
+                        "dest": "@vless-tcp",
+                        "xver": 2
+                    },
+                    {
+                        "path": "/vmtc",
+                        "dest": "@vmess-tcp",
+                        "xver": 2
+                    },
+                    {
+                        "path": "/sstc",
+                        "dest": 4002,
+                        "xver": 2
+                    },
+                    {
+                        "alpn": "h2",
+                        "dest": "@trojan-h2",
+                        "xver": 2
+                    },
+                    {
+                        "dest": "127.0.0.1:8080",
+                        "xver": 2
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "tls",
+                "tlsSettings": {
+                    "certificates": [
+                        {
+                            "ocspStapling": 3600,
+                            "certificateFile": "/certs/fullchain.pem",
+                            "keyFile": "/certs/privkey.pem"
+                        }
+                    ],
+                    "minVersion": "1.2",
+                    "cipherSuites": "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256:TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+                    "alpn": [
+                        "h2",
+                        "http/1.1"
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        },
+        {
+            "listen": "@vless-ws",
+            "protocol": "vless",
+            "settings": {
+                "clients": [],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "ws",
+                "security": "none",
+                "wsSettings": {
+                    "acceptProxyProtocol": true,
+                    "path": "/vlws"
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            },
+            "tag": "vless_tls"
+        },
+        {
+            "listen": "@vmess-ws",
+            "protocol": "vmess",
+            "settings": {
+                "clients": []
+            },
+            "streamSettings": {
+                "network": "ws",
+                "security": "none",
+                "wsSettings": {
+                    "acceptProxyProtocol": true,
+                    "path": "/vmws"
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        },
+        {
+            "listen": "@trojan-ws",
+            "protocol": "trojan",
+            "settings": {
+                "clients": []
+            },
+            "streamSettings": {
+                "network": "ws",
+                "security": "none",
+                "wsSettings": {
+                    "acceptProxyProtocol": true,
+                    "path": "/trojanws"
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        },
+        {
+            "tag": "shadowsocks-ws",
+            "listen": "127.0.0.1",
+            "port": 4001,
+            "protocol": "shadowsocks",
+            "settings": {
+                "method": "chacha20-ietf-poly1305",
+                "password": "",
+                "level": 0
+            },
+            "streamSettings": {
+                "network": "ws",
+                "security": "none",
+                "wsSettings": {
+                    "path": "/ssws"
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        },
+        {
+            "listen": "@vless-tcp",
+            "protocol": "vless",
+            "settings": {
+                "clients": [],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "none",
+                "tcpSettings": {
+                    "acceptProxyProtocol": true,
+                    "header": {
+                        "type": "http",
+                        "request": {
+                            "path": [
+                                "/vltc"
+                            ]
+                        }
+                    }
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        },
+        {
+            "listen": "@vmess-tcp",
+            "protocol": "vmess",
+            "settings": {
+                "clients": []
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "none",
+                "tcpSettings": {
+                    "acceptProxyProtocol": true,
+                    "header": {
+                        "type": "http",
+                        "request": {
+                            "path": [
+                                "/vmtc"
+                            ]
+                        }
+                    }
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        },
+        {
+            "tag": "shadowsocks-tcp",
+            "listen": "127.0.0.1",
+            "port": 4002,
+            "protocol": "shadowsocks",
+            "settings": {
+                "method": "chacha20-ietf-poly1305",
+                "password": "",
+                "level": 0
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "none",
+                "tcpSettings": {
+                    "header": {
+                        "type": "http",
+                        "request": {
+                            "path": [
+                                "/sstc"
+                            ]
+                        }
+                    }
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        },
+        {
+            "listen": "@trojan-h2",
+            "protocol": "trojan",
+            "settings": {
+                "clients": []
+            },
+            "streamSettings": {
+                "network": "h2",
+                "security": "none",
+                "httpSettings": {
+                    "path": "/trh2"
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        },
+        {
+            "listen": "@vless-h2",
+            "protocol": "vless",
+            "settings": {
+                "clients": [],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "h2",
+                "security": "none",
+                "httpSettings": {
+                    "path": "/vlh2"
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        },
+        {
+            "listen": "@vmess-h2",
+            "protocol": "vmess",
+            "settings": {
+                "clients": []
+            },
+            "streamSettings": {
+                "network": "h2",
+                "security": "none",
+                "httpSettings": {
+                    "path": "/vmh2"
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        },
+        {
+            "tag": "shadowsocks-h2",
+            "listen": "127.0.0.1",
+            "port": 4003,
+            "protocol": "shadowsocks",
+            "settings": {
+                "method": "chacha20-ietf-poly1305",
+                "password": "",
+                "level": 0
+            },
+            "streamSettings": {
+                "network": "h2",
+                "security": "none",
+                "httpSettings": {
+                    "path": "/ssh2"
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        },
+        {
+            "listen": "127.0.0.1",
+            "port": 8080,
+            "protocol": "dokodemo-door",
+            "settings": {
+                "address": "127.0.0.1"
+            },
+            "tag": "nginx-fallback"
+        }
+    ],
+    "outbounds": [
+        {
+            "protocol": "freedom",
+            "tag": "direct"
+        },
+        {
+            "protocol": "blackhole",
+            "tag": "block"
+        },
+        {
+            "tag": "DNS-Internal",
+            "protocol": "dns",
+            "settings": {
+                "address": "127.0.0.53",
+                "port": 53
+            }
+        }
+    ],
+    "routing": {
+        "domainStrategy": "AsIs",
+        "rules": [
+            {
+                "inboundTag": [
+                    "api"
+                ],
+                "outboundTag": "api",
+                "type": "field"
+            },
+            {
+                "port": 53,
+                "network": "tcp,udp",
+                "outboundTag": "DNS-Internal"
+            },
+            {
+                "outboundTag": "block",
+                "ip": [
+                    "geoip:private"
+                ]
+            },
+            {
+                "outboundTag": "block",
+                "protocol": [
+                    "bittorrent"
+                ]
+            }
+        ]
     }
 }
