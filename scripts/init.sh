@@ -1,4 +1,4 @@
-TAG="${2:-master}"
+TAG="${2:-main}"
 apt update
 apt install -y \
     ca-certificates \
