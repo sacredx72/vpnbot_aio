@@ -15,15 +15,42 @@ environment: ubuntu 22.04/24.04, debian 11/12
 
 ## Install:
 
+### One-line installation:
 ```shell
-wget -O- https://raw.githubusercontent.com/mercurykd/vpnbot/master/scripts/init.sh | sh -s YOUR_TELEGRAM_BOT_KEY master
+wget -O- https://your-server/install.sh | sh -s YOUR_TELEGRAM_BOT_KEY master
 ```
-#### Restart:
+
+Or using the script from the repository:
 ```shell
-make r
+wget -O- https://raw.githubusercontent.com/mercurykd/vpnbot/master/install.sh | sh -s YOUR_TELEGRAM_BOT_KEY master
 ```
-#### autoload:
-```shell
-crontab -e
-```
-add `@reboot cd /root/vpnbot && make r` and save
+
+#### Parameters:
+- `YOUR_TELEGRAM_BOT_KEY` - your Telegram bot token (required)
+- `master` - branch name (optional, default: master)
+
+#### Commands:
+- **Restart:**
+  ```shell
+  make r
+  ```
+
+- **Check status:**
+  ```shell
+  make ps
+  ```
+
+- **View logs:**
+  ```shell
+  make l
+  ```
+
+- **Auto-start on reboot:**
+  ```shell
+  make cron
+  ```
+
+- **Uninstall:**
+  ```shell
+  make delete
+  ```
