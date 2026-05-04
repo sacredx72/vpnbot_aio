@@ -83,6 +83,8 @@ services:
         env_file:
             - ./.env
             - ./override.env
+        environment:
+            SS_PORT: 8388
         stop_grace_period: 1s
         command: ["/bin/sh", "/start_ng.sh"]
         networks:
