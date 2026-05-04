@@ -510,8 +510,8 @@ services:
             - ./ssh:/ssh
             - ./config/sshd_config:/etc/ssh/sshd_config
             - ./scripts/start_ss.sh:/start_ss.sh
-        hostname: shadowsocks
-        container_name: shadowsocks-${VER}
+        hostname: ss
+        container_name: ss-${VER}
         depends_on:
             php:
                 condition: service_healthy
