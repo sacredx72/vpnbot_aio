@@ -1,28 +1,36 @@
-#!/bin/sh
-# VPNBot Installation Script
-# Usage: wget -O- https://your-server/path/to/install.sh | sh -s YOUR_TELEGRAM_BOT_KEY
+#!/bin/bash
 
-set -e
+# Цвета для вывода
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-BOT_TOKEN="${1:-}"
-TAG="${2:-master}"
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  VPNBot AIO - All-in-One Installation${NC}"
+echo -e "${GREEN}  Branch: qwen (Xray All-in-One)${NC}"
+echo -e "${GREEN}========================================${NC}"
 
-if [ -z "$BOT_TOKEN" ]; then
-    echo "Error: Telegram bot token is required"
-    echo "Usage: wget -O- <url>/install.sh | sh -s YOUR_TELEGRAM_BOT_KEY [branch]"
+# Проверка аргументов
+if [ -z "$1" ]; then
+    echo -e "${RED}Ошибка: Не указан ключ Telegram бота!${NC}"
+    echo "Использование: $0 YOUR_TELEGRAM_BOT_KEY [branch]"
+    echo "Пример: $0 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew1F master"
     exit 1
 fi
 
-echo "=== VPNBot Installation ==="
-echo "Bot Token: ${BOT_TOKEN:0:10}..."
-echo "Branch: $TAG"
+BOT_KEY="$1"
+BRANCH="${2:-qwen}"
 
-# Update package list
-echo "[1/6] Updating package list..."
-apt update
+echo -e "${YELLOW}Ключ бота: ${BOT_KEY:0:10}...${NC}"
+echo -e "${YELLOW}Ветка: ${BRANCH}${NC}"
 
-# Install dependencies
-echo "[2/6] Installing dependencies..."
+# Обновление пакетов
+echo -e "${YELLOW}[1/6] Обновление списков пакетов...${NC}"
+apt update || { echo -e "${RED}Ошибка обновления apt${NC}"; exit 1; }
+
+# Установка зависимостей
+echo -e "${YELLOW}[2/6] Установка необходимых пакетов...${NC}"
 apt install -y \
     ca-certificates \
     curl \
@@ -33,57 +41,69 @@ apt install -y \
     iptables \
     iproute2 \
     xtables-addons-common \
-    xtables-addons-dkms
+    xtables-addons-dkms \
+    wget || { echo -e "${RED}Ошибка установки пакетов${NC}"; exit 1; }
 
-# Install Docker
-echo "[3/6] Installing Docker..."
-if ! command -v docker >/dev/null 2>&1; then
+# Установка Docker
+echo -e "${YELLOW}[3/6] Установка Docker...${NC}"
+if ! command -v docker &> /dev/null; then
     curl -fsSL https://get.docker.com -o get-docker.sh
-    sh get-docker.sh
+    sh get-docker.sh || { echo -e "${RED}Ошибка установки Docker${NC}"; exit 1; }
     rm -f get-docker.sh
 else
-    echo "Docker is already installed"
+    echo -e "${GREEN}Docker уже установлен${NC}"
 fi
 
-# Clone repository
-echo "[4/6] Cloning repository..."
-cd /root
-if [ -d "vpnbot" ]; then
-    echo "Directory vpnbot already exists, removing..."
-    rm -rf vpnbot
-fi
-git clone https://github.com/vpnbot_aio/qwen.git
-cd ./qwen
-git checkout "$TAG"
+# Клонирование репозитория
+echo -e "${YELLOW}[4/6] Клонирование репозитория vpnbot_aio (ветка: ${BRANCH})...${NC}"
+cd /root || exit 1
 
-# Create config file with bot token
-echo "[5/6] Creating configuration..."
+# Удаляем старую директорию если существует
+if [ -d "vpnbot_aio" ]; then
+    echo -e "${YELLOW}Удаление старой директории vpnbot_aio...${NC}"
+    rm -rf vpnbot_aio
+fi
+
+git clone --branch ${BRANCH} https://github.com/sacredx72/vpnbot_aio.git || {
+    echo -e "${RED}Ошибка клонирования репозитория. Проверьте название ветки.${NC}"
+    exit 1
+}
+
+cd vpnbot_aio || exit 1
+
+# Создание конфигурационного файла
+echo -e "${YELLOW}[5/6] Создание конфигурации...${NC}"
 cat > ./app/config.php << EOF
 <?php
 
-\$c = ['key' => '$BOT_TOKEN'];
+\$c = ['key' => '${BOT_KEY}'];
 EOF
 
-# Create empty override files
-touch ./override.env ./docker-compose.override.yml ./config/location.conf ./config/override.conf
+echo -e "${GREEN}Конфигурация создана: ./app/config.php${NC}"
 
-# Create .env file if not exists
-if [ ! -f ./.env ]; then
-    cat > ./.env << EOF
-TZ=UTC
-IMAGE=mercurykd
-EOF
-fi
+# Запуск контейнеров
+echo -e "${YELLOW}[6/6] Запуск контейнеров...${NC}"
+make u || { echo -e "${RED}Ошибка запуска контейнеров${NC}"; exit 1; }
 
-# Start containers
-echo "[6/6] Starting containers..."
-make u
-
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  Установка завершена успешно!${NC}"
+echo -e "${GREEN}========================================${NC}"
 echo ""
-echo "=== Installation Complete ==="
-echo "VPNBot has been installed successfully!"
-echo "To check status: cd /root/vpnbot && make ps"
-echo "To view logs: cd /root/vpnbot && make l"
-echo "To restart: cd /root/vpnbot && make r"
+echo -e "${YELLOW}Следующие шаги:${NC}"
+echo "1. Запустите Telegram бота и отправьте команду /start"
+echo "2. Настройте сервер через меню бота"
 echo ""
-echo "For auto-start on reboot, run: make cron"
+echo -e "${YELLOW}Полезные команды:${NC}"
+echo "  make r          - Перезапуск всех сервисов"
+echo "  make d          - Остановка сервисов"
+echo "  make ps         - Показать статус контейнеров"
+echo "  make logs       - Просмотр логов"
+echo "  make php        - Консоль PHP контейнера"
+echo "  make tg         - Консоль Telegram бота"
+echo ""
+echo -e "${YELLOW}Автозагрузка при старте системы:${NC}"
+echo "  crontab -e"
+echo "  Добавьте строку: @reboot cd /root/vpnbot_aio && make r"
+echo ""
+echo -e "${GREEN}Репозиторий: https://github.com/sacredx72/vpnbot_aio${NC}"
+echo -e "${GREEN}Ветка: ${BRANCH}${NC}"

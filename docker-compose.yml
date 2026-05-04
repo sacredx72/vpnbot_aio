@@ -83,6 +83,8 @@ services:
         env_file:
             - ./.env
             - ./override.env
+        environment:
+            SS_PORT: 8388
         stop_grace_period: 1s
         command: ["/bin/sh", "/start_ng.sh"]
         networks:
@@ -510,8 +512,8 @@ services:
             - ./ssh:/ssh
             - ./config/sshd_config:/etc/ssh/sshd_config
             - ./scripts/start_ss.sh:/start_ss.sh
-        hostname: shadowsocks
-        container_name: shadowsocks-${VER}
+        hostname: ss
+        container_name: ss-${VER}
         depends_on:
             php:
                 condition: service_healthy

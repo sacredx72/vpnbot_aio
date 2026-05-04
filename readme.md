@@ -1,6 +1,9 @@
 telegram bot to manage servers (inside the bot)
 
-- VLESS (Reality OR Websocket)
+- VLESS (Reality OR Websocket + All-in-One fallbacks)
+- VMess (WebSocket + TCP + H2)
+- Trojan (WebSocket + H2)
+- Shadowsocks (WebSocket + TCP)
 - NaiveProxy
 - OpenConnect
 - Wireguard
@@ -9,48 +12,55 @@ telegram bot to manage servers (inside the bot)
 - MTProto
 - PAC
 - automatic ssl
+- Xray All-in-One architecture with Nginx fallbacks
 
 ---
+
 environment: ubuntu 22.04/24.04, debian 11/12
 
-## Install:
+## Install (AIO Branch - qwen):
+
+```shell
+wget -O- https://raw.githubusercontent.com/sacredx72/vpnbot_aio/qwen/install.sh | bash -s YOUR_TELEGRAM_BOT_KEY qwen
+```
+
+## Install (Master Branch):
 
 ### One-line installation:
 ```shell
-wget -O- https://your-server/install.sh | sh -s YOUR_TELEGRAM_BOT_KEY master
+wget -O- https://raw.githubusercontent.com/sacredx72/vpnbot_aio/master/scripts/init.sh | sh -s YOUR_TELEGRAM_BOT_KEY master
 ```
 
-Or using the script from the repository:
+#### Restart:
+```shell
+make r
+```
+
+#### autoload:
 ```shell
 wget -O- https://raw.githubusercontent.com/mercurykd/vpnbot/master/install.sh | sh -s YOUR_TELEGRAM_BOT_KEY master
 ```
+add `@reboot cd /root/vpnbot_aio && make r` and save
 
-#### Parameters:
-- `YOUR_TELEGRAM_BOT_KEY` - your Telegram bot token (required)
-- `master` - branch name (optional, default: master)
+## Features:
 
-#### Commands:
-- **Restart:**
-  ```shell
-  make r
-  ```
+### All-in-One Architecture (qwen branch)
+- Multiple protocols through single port 443
+- Fallback routing by path and ALPN
+- PROXY protocol v2 for real IP transmission
+- WebSocket, TCP, H2 transports
+- Automatic SSL certificates
 
-- **Check status:**
-  ```shell
-  make ps
-  ```
+### Supported Protocols:
+- **VLESS**: `/vlws` (WebSocket), `/vltc` (TCP)
+- **VMess**: `/vmws` (WebSocket), `/vmtc` (TCP)
+- **Trojan**: `/trojanws` (WebSocket), `/trh2` (H2)
+- **Shadowsocks**: `/ssws` (WebSocket), `/sstc` (TCP)
 
-- **View logs:**
-  ```shell
-  make l
-  ```
+## Management:
 
-- **Auto-start on reboot:**
-  ```shell
-  make cron
-  ```
-
-- **Uninstall:**
-  ```shell
-  make delete
-  ```
+All configuration is done through Telegram bot interface:
+- Start bot and send `/start`
+- Use menu buttons to configure protocols
+- Generate subscriptions for clients
+- Switch transports via bot commands
