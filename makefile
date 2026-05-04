@@ -2,9 +2,10 @@ b:
 	docker compose build
 u: # запуск контейнеров
 	$(eval IP := $(shell hostname -I | awk '{print $$1}'))
+	$(eval VER := $(shell git describe --tags --always 2>/dev/null || git rev-parse --short HEAD))
 	bash ./update/update.sh &
 	touch ./override.env ./docker-compose.override.yml ./config/location.conf ./config/override.conf
-	IP=$(IP) VER=$(shell git describe --tags) docker compose --env-file ./.env --env-file ./override.env up -d --force-recreate
+	IP=$(IP) VER=$(VER) docker compose --env-file ./.env --env-file ./override.env up -d --force-recreate
 d: # остановка контейнеров
 	-kill -9 $(shell cat ./update/update_pid) > /dev/null
 	docker compose down --remove-orphans
