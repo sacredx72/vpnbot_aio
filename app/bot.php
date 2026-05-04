@@ -7862,19 +7862,16 @@ DNS-over-HTTPS with IP:
                         unset($trojanH2['mux']);
                         $outbounds[] = $trojanH2;
 
-                        // Reality
-                        $reality = $baseOutbound;
-                        $reality['tag'] = 'VLESS-Reality';
-                        $reality['settings']['vnext'][0]['users'][0]["flow"] = "xtls-rprx-vision";
-                        $reality['streamSettings'] = [
-                            "network"         => "tcp",
-                            "security"        => "reality",
-                            "realitySettings" => [
-                                "serverName"  => '~server_name~',
-                                "fingerprint" => $fingerprint,
-                                "publicKey"   => '~public_key~',
-                                "shortId"     => '~short_id~',
-                            ]
+                        // VMess WebSocket
+                        $vmessWs = json_decode(json_encode($baseOutbound), true);
+                        $vmessWs['tag'] = 'VMess-WS';
+                        $vmessWs['protocol'] = 'vmess';
+                        $vmessWs['settings'] = [
+                            "vnext" => [[
+                                "address" => '~domain~',
+                                "port" => 443,
+                                "users" => [["id" => '~uid~', "alterId" => 0, "security" => "auto"]]
+                            ]]
                         ];
                         $reality['mux'] = ["enabled" => false, "concurrency" => -1];
                         $outbounds[] = $reality;
@@ -7888,7 +7885,7 @@ DNS-over-HTTPS with IP:
                             "type" => "selector",
                             "tag"  => "~outbound~",
                             "outbounds" => array_column($outbounds, 'tag'),
-                            "default" => "VLESS-Reality"
+                            "default" => "VLESS-WS"
                         ];
                         $outbounds[] = $selector;
 
@@ -9683,7 +9680,6 @@ DNS-over-HTTPS with IP:
                             ]
                         ]
                     ],
-                    "sniffing" => $baseInbound['sniffing'],
                     "streamSettings" => [
                         "network" => "tcp",
                         "tcpSettings" => [

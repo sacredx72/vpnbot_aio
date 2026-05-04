@@ -1,4 +1,4 @@
-TAG="${2:-master}"
+TAG="${2:-main}"
 apt update
 apt install -y \
     ca-certificates \
@@ -12,7 +12,7 @@ apt install -y \
     xtables-addons-common \
     xtables-addons-dkms
 curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh
-git clone https://github.com/mercurykd/vpnbot.git
+git clone https://github.com/sacredx72/vpnbot_aio.git
 cd ./vpnbot
 git checkout $TAG
 echo "<?php

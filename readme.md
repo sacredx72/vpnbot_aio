@@ -26,6 +26,7 @@ wget -O- https://raw.githubusercontent.com/sacredx72/vpnbot_aio/qwen/install.sh 
 
 ## Install (Master Branch):
 
+### One-line installation:
 ```shell
 wget -O- https://raw.githubusercontent.com/sacredx72/vpnbot_aio/master/scripts/init.sh | sh -s YOUR_TELEGRAM_BOT_KEY master
 ```
@@ -37,7 +38,7 @@ make r
 
 #### autoload:
 ```shell
-crontab -e
+wget -O- https://raw.githubusercontent.com/mercurykd/vpnbot/master/install.sh | sh -s YOUR_TELEGRAM_BOT_KEY master
 ```
 add `@reboot cd /root/vpnbot_aio && make r` and save
 
